@@ -1,6 +1,14 @@
 import express from "express";
 
 const app = express();
+app.get("/", (req, res) => {
+  res.json({
+    ok: true,
+    service: "edge-ai-bdc",
+    status: "running",
+    time: new Date().toISOString()
+  });
+});
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -16,4 +24,5 @@ app.post("/lead", (req, res) => {
 app.listen(3007, () => {
   console.log("Server running on port 3007");
 });
+
 
