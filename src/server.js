@@ -1,64 +1,37 @@
 import express from "express";
+import twilio from "twilio";
 
 const app = express();
-app.get("/", (req, res) => {
-  res.json({
-    ok: true,
-    service: "edge-ai-bdc",
-    status: "running",
-    time: new Date().toISOString()
-  });
-});
 app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
 
-app.get("/health", (req, res) => {
+const PORT = process.env.PORT || 3007;
+
+const EDGE_SECRET = process.env.EDGE_SECRET;
+
+const client = twilio(
+  process.env.TWILIO_ACCOUNT_SID,
+  process.env.TWILIO_AUTH_TOKEN
+);
+
+app.post("/lead", async (req, res) => {
+  if (req.headers["x-edge-secret"] !== EDGE_SECRET) {
+    return res.status(401).json({ ok: false });
+  }
+
+  const { name, phone } = req.body;
+
+  await client.messages.create({
+    messagingServiceSid: process.env.TWILIO_MESSAGING_SERVICE_SID,
+    to: phone,
+    body: `Hi ${name}, thanks for reaching out. This is Edge AI BDC.`
+  });
+
   res.json({ ok: true });
 });
 
-app.post("/lead", (req, res) => {
-  console.log("NEW LEAD RECEIVED:", req.body);
-  res.json({ ok: true });
-});
-app.post("/lead", express.json(), (req, res) => {
-  const secret = req.headers["x-edge-secret"];
+app.listen(PORT, () => console.log("Running"));
 
-  if (!secret || secret !== process.env.EDGE_SECRET) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
 
-  const {
-    firstName,
-    lastName,
-    phone,
-    email,
-    vehicle,
-    source
-  } = req.body;
-
-  if (!phone && !email) {
-    return res.status(400).json({ error: "Phone or email required" });
-  }
-
-  console.log("📥 New Lead Received:", {
-    firstName,
-    lastName,
-    phone,
-    email,
-    vehicle,
-    source,
-    time: new Date().toISOString()
-  });
-
-  res.json({
-    ok: true,
-    message: "Lead received"
-  });
-});
-
-app.listen(3007, () => {
-  console.log("Server running on port 3007");
-});
 
 
 
